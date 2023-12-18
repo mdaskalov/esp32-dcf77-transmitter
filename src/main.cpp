@@ -14,8 +14,11 @@ using namespace std;
 
 #include "dcf77.hpp"
 
-#define PWM_DUTY_ON  2
-#define PWM_DUTY_OFF 0
+#define PWM_CHANNEL    0
+#define PWM_FREQENCY   77500
+#define PWM_RESOLUTION 8 // 1-16 bit
+#define PWM_DUTY_ON    128
+#define PWM_DUTY_OFF   0
 
 static DCF77  dcf77;
 static string dcf77_data;
@@ -79,9 +82,9 @@ void setup()
   Serial.println("Connected.");
 
   // Configure carrier frequency using PWM
-  ledcSetup(DCF77_PWM_CHAN, DCF77_PWM_FREQ, DCF77_PWM_RES);
-  ledcAttachPin(DCF77_PWM_PIN, DCF77_PWM_CHAN);
-  ledcWrite(DCF77_PWM_CHAN, PWM_DUTY_ON);
+  ledcSetup(PWM_CHANNEL, PWM_FREQENCY, PWM_RESOLUTION);
+  ledcAttachPin(DCF77_GPIO, PWM_CHANNEL);
+  ledcWrite(PWM_CHANNEL, PWM_DUTY_ON);
 #ifdef USE_DISPLAY
   tft.fillScreen(DISPLAY_BG);
 #endif
@@ -109,9 +112,9 @@ void loop()
         add_dcf77_data('-');
     }
     add_dcf77_data('0' + bit);
-    ledcWrite(DCF77_PWM_CHAN, PWM_DUTY_OFF);
+    ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
     delayMicroseconds(bit ? 200000 : 100000); // 1=200ms 0=100ms
-    ledcWrite(DCF77_PWM_CHAN, PWM_DUTY_ON);
+    ledcWrite(PWM_CHANNEL, PWM_DUTY_ON);
   }
 #ifdef USE_DISPLAY
   displayTime(now, sec == 0);
