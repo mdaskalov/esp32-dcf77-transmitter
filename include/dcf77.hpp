@@ -22,7 +22,7 @@ class DCF77 {
 
     char evenParity(const string &val)
     {
-      int parity = '0';
+      char parity = '0';
       for (auto c : val)
         parity ^= c & 1;
       return parity;
