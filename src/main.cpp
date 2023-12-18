@@ -23,6 +23,13 @@ using namespace std;
 static DCF77  dcf77;
 static string dcf77_data;
 
+#ifdef CORE2
+#include <AXP192.h>
+#include <RTC.h>
+AXP192 axp;
+RTC    rtc;
+#endif
+
 #ifdef USE_DISPLAY
 #include <SPI.h>
 #include <TFT_eSPI.h>
@@ -66,6 +73,21 @@ void wait_next_sec()
 void setup()
 {
   Serial.begin(115200);
+
+#ifdef CORE2
+  axp.begin();
+  axp.SetLcdVoltage(3300);
+  axp.SetSpkEnable(1);
+
+  RTC_TimeTypeDef tt;
+  rtc.GetTime(&tt);
+  timespec ts;
+  ts.tv_sec = ((tt.Hours) * 60 + tt.Minutes) * 60 + tt.Seconds;
+  ts.tv_nsec = 0;
+  clock_settime(CLOCK_REALTIME, &ts);
+
+  Serial.printf("RTC Time: %02d:%02d:%02d\n", tt.Hours, tt.Minutes, tt.Seconds);
+#endif
 
 #ifdef USE_DISPLAY
   tft.init();
