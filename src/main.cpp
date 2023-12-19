@@ -23,6 +23,8 @@ using namespace std;
 static DCF77  dcf77;
 static string dcf77_data;
 
+static int dashSecs[] = {1, 15, 21, 29, 36, 42, 45, 50};
+
 #ifdef CORE2
 #include <AXP192.h>
 #include <RTC.h>
@@ -61,13 +63,6 @@ void add_dcf77_data(char c)
 {
   Serial.print(c);
   dcf77_data.push_back(c);
-}
-
-void wait_next_sec()
-{
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  delayMicroseconds(1000000 - tv.tv_usec);
 }
 
 void setup()
@@ -110,34 +105,37 @@ void setup()
 #ifdef USE_DISPLAY
   tft.fillScreen(DISPLAY_BG);
 #endif
-  Serial.printf("ESP: Free: %i, Min: %i, Size: %i, Alloc: %i\n", ESP.getFreeHeap(), ESP.getMinFreeHeap(), ESP.getHeapSize(), ESP.getMaxAllocHeap());
 }
 
 void loop()
 {
-  wait_next_sec();
   auto now = chrono::system_clock::now();
-  int  sec = chrono::duration_cast<chrono::seconds>(now.time_since_epoch()).count() % 60;
+  int  wait = 1000 - std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() % 1000;
+  now += chrono::milliseconds(wait);
+  // Wait next sec
+  delay(wait);
+  int sec = chrono::duration_cast<chrono::seconds>(now.time_since_epoch()).count() % 60;
   if (sec == 0) {
-    dcf77_data.clear();
+    ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
+    delay(100); // 0=100ms
+    ledcWrite(PWM_CHANNEL, PWM_DUTY_ON);
     auto ttNextMin = chrono::system_clock::to_time_t(now + chrono::minutes(1));
     auto tmNextMin = localtime(&ttNextMin);
     dcf77.setTime(tmNextMin);
     Serial.print(tmNextMin, "\n%a, %d.%m.%y %H:%M ");
+    dcf77_data.clear();
+    add_dcf77_data('0');
   }
-  int bit = dcf77.getBit(sec);
-  if (bit < 0)
-    add_dcf77_data('.');
-  else if (sec <= 58) {
-    for (auto s : {1, 15, 21, 29, 36, 42, 45, 50}) {
-      if (s == sec)
-        add_dcf77_data('-');
-    }
-    add_dcf77_data('0' + bit);
+  else if (sec < 59) {
     ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
-    delayMicroseconds(bit ? 200000 : 100000); // 1=200ms 0=100ms
+    char bit = dcf77.getBit(sec);
+    delay(bit == '1' ? 200 : 100); // 1=200ms 0=100ms
     ledcWrite(PWM_CHANNEL, PWM_DUTY_ON);
+    if (bit != '.' && find(begin(dashSecs), end(dashSecs), sec) != end(dashSecs))
+      add_dcf77_data('-');
+    add_dcf77_data(bit);
   }
+
 #ifdef USE_DISPLAY
   displayTime(now, sec == 0);
 #endif
