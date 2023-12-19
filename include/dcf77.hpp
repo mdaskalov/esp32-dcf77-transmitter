@@ -61,5 +61,5 @@ class DCF77 {
       data = encodeDCF77(tH, tM, dW, dD, dM, dY);
     }
 
-    char getBit(int sec) { return (sec > data.length() ? '0' : data[sec]); }
+    char getBit(int sec) { return (sec > data.length() ? '.' : data[sec]); }
 };
