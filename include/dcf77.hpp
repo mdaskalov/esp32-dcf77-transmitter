@@ -14,9 +14,8 @@ class DCF77 {
     string encodeBCD(int val, int bits)
     {
       string res;
-      int    bcd = ((val / 10) << 4) + (val % 10);
       for (int bit = 0; bit < bits; bit++)
-        res.push_back((bcd & (1 << bit)) ? '1' : '0');
+        res.push_back('0' + ((((val / 10) << 4) + (val % 10) >> bit) & 1));
       return res;
     }
 
