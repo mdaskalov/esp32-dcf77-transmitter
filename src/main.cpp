@@ -95,7 +95,7 @@ void setup()
   WiFi.begin(WIFI_SSID, WIFI_PASSWD);
   Serial.printf("Connecting to %s...\n", WIFI_SSID);
   WiFi.waitForConnectResult();
-  configTime(GMT_OFFSET * 3600, DST_OFFSET * 3600, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
+  configTzTime(NTP_TZ, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
   Serial.println("Connected.");
 
   // Configure carrier frequency using PWM
