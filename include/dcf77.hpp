@@ -9,46 +9,38 @@ using namespace std;
 
 class DCF77 {
   private:
-    string data;
+    static char data[];
 
-    string encodeBCD(int val, int bits)
+    void encodeBCD(int val, int start, int len)
     {
-      string res;
-      for (int bit = 0; bit < bits; bit++)
-        res.push_back('0' + ((((val / 10) << 4) + (val % 10) >> bit) & 1));
-      return res;
+      for (int bit = 0; bit < len; bit++)
+        data[start + bit] = '0' + ((((val / 10) << 4) + (val % 10) >> bit) & 1);
     }
 
-    char evenParity(const string &val)
+    void evenParity(int start, int len)
     {
       char parity = '0';
-      for (auto c : val)
-        parity ^= c & 1;
-      return parity;
+      for (int bit = 0; bit < len; bit++)
+        parity ^= data[start + bit] & 1;
+      data[start + len] = parity;
     }
 
-    string encodeDCF77(int tH, int tM, int dW, int dD, int dM, int dY)
+    void encodeDCF77(int tH, int tM, int dW, int dD, int dM, int dY, int dst)
     {
-      char   stMin = '0';
-      string weather = "11111111100000";     // Weather broadcast / Civil warning bits
-      char   fault = '0';                    // Call bit: abnormal transmitter operation
-      char   dstAnn = '0';                   // Summer time announcement. Set during hour before change
-      string dst = DST_OFFSET ? "10" : "01"; // DST
-      char   leap = '0';                     // Leap second announcement. Set during hour before leap second
-      char   stTime = '1';                   // Start of encoded time
-      string min = encodeBCD(tM, 7);
-      char   pMin = evenParity(min);
-      string hour = encodeBCD(tH, 6);
-      char   pHour = evenParity(hour);
-      string mDay = encodeBCD(dD, 6);
-      string wDay = encodeBCD(dW, 3);
-      string mon = encodeBCD(dM, 5);
-      string year = encodeBCD(dY, 8);
-      char   pDate = evenParity(mDay + wDay + mon + year);
-      return stMin + weather + fault + dstAnn + dst + leap + stTime + min + pMin + hour + pHour + mDay + wDay + mon + year + pDate;
+      encodeBCD(dst, 17, 2);
+      encodeBCD(tM, 21, 7);
+      evenParity(21, 7);
+      encodeBCD(tH, 29, 6);
+      evenParity(29, 6);
+      encodeBCD(dD, 36, 6);
+      encodeBCD(dW, 42, 3);
+      encodeBCD(dM, 45, 5);
+      encodeBCD(dY, 50, 8);
+      evenParity(36, 22);
     }
 
   public:
+    char getBit(int sec) { return data[sec % 60]; }
     void setTime(struct tm *local_time)
     {
       int tH = local_time->tm_hour;
@@ -57,8 +49,24 @@ class DCF77 {
       int dD = local_time->tm_mday;
       int dM = local_time->tm_mon + 1;
       int dY = local_time->tm_year % 100;
-      data = encodeDCF77(tH, tM, dW, dD, dM, dY);
+      int dst = local_time->tm_isdst > 0 ? 1 : 2; // 2=CET 1=CEST
+      encodeDCF77(tH, tM, dW, dD, dM, dY, dst);
     }
+};
 
-    char getBit(int sec) { return (sec > data.length() ? '.' : data[sec]); }
+char DCF77::data[] = {
+    '0',                                                                  // 00: Start of minute
+    '1', '1', '1', '1', '1', '1', '1', '1', '1', '0', '0', '0', '0', '0', // 01: Weather broadcast / Civil warning bits
+    '0',                                                                  // 15: Call bit: abnormal transmitter operation
+    '0',                                                                  // 16: Summer time announcement. Set during hour before change
+    '0', '1',                                                             // 17: CEST=10 CET=01
+    '0',                                                                  // 19: Leap second announcement. Set during hour before leap second
+    '1',                                                                  // 20: Start of encoded time
+    '0', '0', '0', '0', '0', '0', '0', '0',                               // 21: Minutes (7bit + parity, 00-59)
+    '0', '0', '0', '0', '0', '0', '0',                                    // 29: Hours (6bit + parity, 0-23)
+    '0', '0', '0', '0', '0',                                              // 36: Day of month (6bit, 1-31)
+    '0', '0', '0',                                                        // 42: Day of week (3bit, 1-7, Monday=1)
+    '0', '0', '0', '0', '0',                                              // 45: Month number (5bit, 1-12)
+    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',                     // 50: Year within century (8bit + parity, 00-99)
+    '.'                                                                   // 59: Not used
 };
