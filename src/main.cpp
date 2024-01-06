@@ -69,6 +69,8 @@ void log_char(char c)
 void log_dcf77_data(int sec, char bit)
 {
   if (time_synced) {
+    if (sec == 0)
+      dcf77_data.clear();
     if (find(begin(dashSecs), end(dashSecs), sec) != end(dashSecs))
       log_char('-');
     log_char(bit);
@@ -134,9 +136,8 @@ void loop()
     auto ttEncode = chrono::system_clock::to_time_t(now + chrono::milliseconds(msToNextSec) + chrono::seconds(61)); // next Minute
     auto tmEncode = localtime(&ttEncode);
     dcf77.setTime(tmEncode);
-    Serial.print(tmEncode, "\n%a, %d.%m.%y %H:%M %Z ");
-    dcf77_data.clear();
     time_synced = true;
+    Serial.print(tmEncode, "\n%a, %d.%m.%y %H:%M %Z ");
   }
 
 #ifdef USE_DISPLAY
