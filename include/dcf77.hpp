@@ -49,17 +49,17 @@ class DCF77 {
       int dD = local_time->tm_mday;
       int dM = local_time->tm_mon + 1;
       int dY = local_time->tm_year % 100;
-      int dst = local_time->tm_isdst > 0 ? 1 : 2; // 2=CET 1=CEST
+      int dst = local_time->tm_isdst > 0 ? 1 : 2;
       encodeDCF77(tH, tM, dW, dD, dM, dY, dst);
     }
 };
 
 char DCF77::data[] = {
     '0',                                                                  // 00: Start of minute
-    '1', '1', '1', '1', '1', '1', '1', '1', '1', '0', '0', '0', '0', '0', // 01: Weather broadcast / Civil warning bits
+    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', // 01: Weather broadcast / Civil warning bits
     '0',                                                                  // 15: Call bit: abnormal transmitter operation
     '0',                                                                  // 16: Summer time announcement. Set during hour before change
-    '0', '1',                                                             // 17: CEST=10 CET=01
+    '0', '1',                                                             // 17: 01=CET, 10=CEST
     '0',                                                                  // 19: Leap second announcement. Set during hour before leap second
     '1',                                                                  // 20: Start of encoded time
     '0', '0', '0', '0', '0', '0', '0', '0',                               // 21: Minutes (7bit + parity, 00-59)
