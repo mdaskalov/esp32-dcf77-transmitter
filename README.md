@@ -3,7 +3,7 @@
 Simulates the [DCF77](https://en.wikipedia.org/wiki/DCF77) time code signal on a GPIO pin. It uses PWM with frequency set to 77.5 kHz to simulate the carrier signal. The time is synchronized using NTP server.
 
 ## Installation
-Configure your Wi-Fi credentials the `defaults_override.ini` file. 
+Configure your Wi-Fi credentials in the `defaults_override.ini` file. 
 
 If missing, the file will be created on the initial build (see `override_copy.py`). 
 
