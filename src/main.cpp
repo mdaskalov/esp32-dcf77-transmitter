@@ -110,6 +110,7 @@ void setup()
   Serial.println(WiFi.isConnected() ? "Connected." : "Connection timeout.");
 
   // Configure carrier frequency using PWM
+  Serial.printf("Using GPIO%d\n", DCF77_GPIO);
   ledcSetup(PWM_CHANNEL, PWM_FREQENCY, PWM_RESOLUTION);
   ledcAttachPin(DCF77_GPIO, PWM_CHANNEL);
   ledcWrite(PWM_CHANNEL, PWM_DUTY_ON);
@@ -124,6 +125,7 @@ void loop()
   // Wait next sec
   int msToNextSec = 1000 - std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() % 1000;
   delay(msToNextSec);
+  now += chrono::milliseconds(msToNextSec);
   int sec = chrono::duration_cast<chrono::seconds>(now.time_since_epoch()).count() % 60;
   if (sec < 59) {
     char bit = dcf77.getBit(sec);
@@ -133,11 +135,13 @@ void loop()
     log_dcf77_data(sec, bit);
   }
   else {
-    auto ttEncode = chrono::system_clock::to_time_t(now + chrono::milliseconds(msToNextSec) + chrono::seconds(61)); // next Minute
+    auto ttEncode = chrono::system_clock::to_time_t(now + chrono::seconds(1) + chrono::minutes(DCF77_TIME_OFS));
     auto tmEncode = localtime(&ttEncode);
-    dcf77.setTime(tmEncode);
-    time_synced = true;
-    Serial.print(tmEncode, "\n%a, %d.%m.%y %H:%M %Z ");
+    if (tmEncode->tm_year > 100) {
+      time_synced = true;
+      dcf77.setTime(tmEncode);
+      Serial.print(tmEncode, "\n%a, %d.%m.%y %H:%M %Z ");
+    }
   }
 
 #ifdef USE_DISPLAY
