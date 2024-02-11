@@ -66,14 +66,14 @@ void log_char(char c)
   dcf77_data.push_back(c);
 }
 
-void log_dcf77_data(int sec, char bit)
+void log_dcf77_data(int sec, int bit)
 {
   if (time_synced) {
     if (sec == 0)
       dcf77_data.clear();
     if (find(begin(dashSecs), end(dashSecs), sec) != end(dashSecs))
       log_char('-');
-    log_char(bit);
+    log_char('0' + bit);
   }
   else
     Serial.print('.');
@@ -128,9 +128,9 @@ void loop()
   now += chrono::milliseconds(msToNextSec);
   int sec = chrono::duration_cast<chrono::seconds>(now.time_since_epoch()).count() % 60;
   if (sec < 59) {
-    char bit = dcf77.getBit(sec);
+    int bit = dcf77.getBit(sec);
     ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
-    delay(bit == '1' ? 200 : 100); // 1=200ms 0=100ms
+    delay(bit ? 200 : 100); // 1=200ms 0=100ms
     ledcWrite(PWM_CHANNEL, PWM_DUTY_ON);
     log_dcf77_data(sec, bit);
   }
